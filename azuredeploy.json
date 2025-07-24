@@ -1,28 +1,178 @@
 {
-  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "$schema": "https://schema.management.azure.com/schemas/2018-05-01/subscriptionDeploymentTemplate.json#",
   "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.36.177.2456",
+      "templateHash": "1275202788860110320"
+    }
+  },
   "parameters": {
-    "resourceGroupName": {
+    "rgName": {
       "type": "string",
-      "metadata": {
-        "description": "Name of the resource group"
-      }
+      "defaultValue": "pritam-rg"
     },
     "location": {
       "type": "string",
-      "defaultValue": "[resourceGroup().location]",
-      "metadata": {
-        "description": "Location for the resource group"
-      }
+      "defaultValue": "centralindia"
+    },
+    "vmName": {
+      "type": "string",
+      "defaultValue": "pritam-vm"
+    },
+    "adminPassword": {
+      "type": "securestring"
     }
   },
   "resources": [
     {
-      "type": "Microsoft.Resources/resourceGroups",
-      "apiVersion": "2021-04-01",
-      "name": "[parameters('resourceGroupName')]",
-      "location": "[parameters('location')]"
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "rg-deploy",
+      "location": "[deployment().location]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "rgName": {
+            "value": "[parameters('rgName')]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2018-05-01/subscriptionDeploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.36.177.2456",
+              "templateHash": "1470486833720470421"
+            }
+          },
+          "parameters": {
+            "rgName": {
+              "type": "string",
+              "defaultValue": "default-rg"
+            },
+            "location": {
+              "type": "string",
+              "defaultValue": "eastus"
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Resources/resourceGroups",
+              "apiVersion": "2022-09-01",
+              "name": "[parameters('rgName')]",
+              "location": "[parameters('location')]"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "vm-deploy",
+      "resourceGroup": "[parameters('rgName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "rgName": {
+            "value": "[parameters('rgName')]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "vmName": {
+            "value": "[parameters('vmName')]"
+          },
+          "adminPassword": {
+            "value": "[parameters('adminPassword')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.36.177.2456",
+              "templateHash": "13642849986302300670"
+            }
+          },
+          "parameters": {
+            "rgName": {
+              "type": "string"
+            },
+            "location": {
+              "type": "string",
+              "defaultValue": "eastus"
+            },
+            "vmName": {
+              "type": "string",
+              "defaultValue": "default-vm"
+            },
+            "adminUsername": {
+              "type": "string",
+              "defaultValue": "azureuser"
+            },
+            "adminPassword": {
+              "type": "securestring"
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Compute/virtualMachines",
+              "apiVersion": "2022-11-01",
+              "name": "[parameters('vmName')]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "hardwareProfile": {
+                  "vmSize": "Standard_B1s"
+                },
+                "osProfile": {
+                  "computerName": "[parameters('vmName')]",
+                  "adminUsername": "[parameters('adminUsername')]",
+                  "adminPassword": "[parameters('adminPassword')]"
+                },
+                "storageProfile": {
+                  "imageReference": {
+                    "publisher": "Canonical",
+                    "offer": "UbuntuServer",
+                    "sku": "18.04-LTS",
+                    "version": "latest"
+                  },
+                  "osDisk": {
+                    "createOption": "FromImage",
+                    "managedDisk": {
+                      "storageAccountType": "Standard_LRS"
+                    }
+                  }
+                },
+                "networkProfile": {
+                  "networkInterfaces": [
+                    {
+                      "id": "[resourceId('Microsoft.Network/networkInterfaces', format('{0}-nic', parameters('vmName')))]"
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "[subscriptionResourceId('Microsoft.Resources/deployments', 'rg-deploy')]"
+      ]
     }
-  ],
-  "outputs": {}
+  ]
 }
